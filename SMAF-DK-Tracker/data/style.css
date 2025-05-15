@@ -1,0 +1,472 @@
+:root {
+    --app-background-100-light: hsl(0, 0%, 100%, 1.0);
+    --app-background-100-dark: hsl(210, 10%, 10%, 1.0);
+    --app-background-100: 0;
+
+    --app-background-200-light: hsl(0, 0%, 95%, 1.0);
+    --app-background-200-dark: hsl(210, 10%, 15%, 1.0);
+    --app-background-200: 0;
+
+    --accent-50-light: hsl(210, 100%, 95%);
+    --accent-50-dark: hsl(210, 100%, 95%);
+    --accent-50: 0;
+
+    --accent-100-light: hsl(210, 100%, 50%);
+    --accent-100-dark: hsl(210, 100%, 50%);
+    --accent-100: 0;
+
+    --accent-200-light: hsl(210, 100%, 35%);
+    --accent-200-dark: hsl(210, 100%, 35%);
+    --accent-200: 0;
+
+    --accent-300-light: hsl(210, 100%, 20%);
+    --accent-300-dark: hsl(210, 100%, 20%);
+    --accent-300: 0;
+    
+    --mono-100-light: hsl(210, 10%, 10%, 0.92);
+    --mono-100-dark: hsla(0, 0%, 100%, 0.92);
+    --mono-100: 0;
+
+    --mono-200-light: hsl(210, 10%, 10%, 0.52);
+    --mono-200-dark: hsla(0, 0%, 100%, 0.52);
+    --mono-200: 0;
+
+    --mono-300-light: hsl(210, 10%, 10%, 0.32);
+    --mono-300-dark: hsla(0, 0%, 100%, 0.32);
+    --mono-300: 0;
+
+    --mono-400-light: hsl(210, 10%, 10%, 0.24);
+    --mono-400-dark: hsla(0, 0%, 100%, 0.24);
+    --mono-400: 0;
+
+    --mono-500-light: hsl(210, 10%, 10%, 0.04);
+    --mono-500-dark: hsla(0, 0%, 100%, 0.08);
+    --mono-500: 0;
+
+    --mono-600-light: hsl(0, 0%, 100%, 1.0);
+    --mono-600-dark: hsla(0, 0%, 100%, 0.04);
+    --mono-600: 0;
+
+    --semantic-info-50-light: hsl(210, 100%, 50%, 0.08);
+    --semantic-info-50-dark: hsl(210, 100%, 50%, 0.08);
+    --semantic-info-50: 0;
+
+    --semantic-info-100-light: hsl(210, 100%, 50%);
+    --semantic-info-100-dark: hsl(210, 100%, 50%);
+    --semantic-info-100: 0;
+
+    --semantic-info-200-light: hsl(210, 100%, 35%);
+    --semantic-info-200-dark: hsl(210, 100%, 35%);
+    --semantic-info-200: 0;
+
+    --semantic-info-300-light: hsl(210, 100%, 20%);
+    --semantic-info-300-dark: hsl(210, 100%, 85%);
+    --semantic-info-300: 0;
+
+    --semantic-error-100-light: 0;
+    --semantic-error-100-dark: 0;
+    --semantic-error-100: 0;
+
+    --semantic-warning-100-light: 0;
+    --semantic-warning-100-dark: 0;
+    --semantic-warning-100: 0;
+
+    --semantic-success-100-light: 0;
+    --semantic-success-100-dark: 0;
+    --semantic-success-100: 0;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --app-background-100: var(--app-background-100-light);
+        --app-background-200: var(--app-background-200-light);
+
+        --accent-50: var(--accent-50-light);
+        --accent-100: var(--accent-100-light);
+        --accent-200: var(--accent-200-light);
+        --accent-300: var(--accent-300-light);
+
+        --mono-100: var(--mono-100-light);
+        --mono-200: var(--mono-200-light);
+        --mono-300: var(--mono-300-light);
+        --mono-400: var(--mono-400-light);
+        --mono-500: var(--mono-500-light);
+        --mono-600: var(--mono-600-light);
+
+        --semantic-info-50: var(--semantic-info-50-light);
+        --semantic-info-100: var(--semantic-info-100-light);
+        --semantic-info-200: var(--semantic-info-200-light);
+        --semantic-info-300: var(--semantic-info-300-light);
+
+        --semantic-error-100: var(--semantic-error-100-light);
+        --semantic-warning-100: var(--semantic-warning-100-light);
+        --semantic-success-100: var(--semantic-success-100-light);
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --app-background-100: var(--app-background-100-dark);
+        --app-background-200: var(--app-background-200-dark);
+        
+        --accent-50: var(--accent-50-dark);
+        --accent-100: var(--accent-100-dark);
+        --accent-200: var(--accent-200-dark);
+        --accent-300: var(--accent-300-dark);
+
+        --mono-100: var(--mono-100-dark);
+        --mono-200: var(--mono-200-dark);
+        --mono-300: var(--mono-300-dark);
+        --mono-400: var(--mono-400-dark);
+        --mono-500: var(--mono-500-dark);
+        --mono-600: var(--mono-600-dark);
+        
+        --semantic-info-50: var(--semantic-info-50-dark);
+        --semantic-info-100: var(--semantic-info-100-dark);
+        --semantic-info-200: var(--semantic-info-200-dark);
+        --semantic-info-300: var(--semantic-info-300-dark);
+
+        --semantic-error-100: var(--semantic-error-100-dark);
+        --semantic-warning-100: var(--semantic-warning-100-dark);
+        --semantic-success-100: var(--semantic-success-100-dark);
+    }
+}
+
+* {
+    font-family: system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--mono-100);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    outline: none;
+    border: none;
+    border-radius: none;
+    background: none;
+    list-style: none;
+    word-wrap: break-words;
+    cursor: default;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+    background-color: var(--app-background-100);
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: center;
+    padding: 1.5rem 1.5rem 8rem;
+}
+
+svg {
+    fill: var(--mono-100);
+    color: var(--mono-100);
+}
+
+.content-frame,
+.success-frame {
+    max-width: 460px;
+    flex-direction: column;
+    align-items: stretch;
+}
+  
+input[type="text"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+input[type="checkbox"],
+button,
+select {
+    all: unset;
+    border-radius: 1px;
+    min-width: 0;
+    background-color: var(--mono-600);
+    box-sizing: border-box;
+}
+
+input[type="text"],
+select {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+input:focus-visible + .track,
+input[type="submit"]:focus-visible,
+input[type="button"]:focus-visible,
+input[type="reset"]:focus-visible,
+button:focus-visible {
+    outline-offset: 2px;
+    outline: 2.5px solid orange;
+}
+
+.input-frame {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.checkbox-frame {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+label {
+    margin-top: 1rem;
+    font-weight: 500;
+}
+
+mark {
+    color: red;
+    display: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: inherit;
+    line-height: 1.15;
+    margin-top: 3.5rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+h1 {
+    font-size: 2.027rem;
+    font-weight: 700;
+}
+
+header h1 {
+    margin-top: 2.5rem;
+}
+
+header svg {
+    margin-top: 2.5rem;
+}
+
+h2 {
+    font-size: 1.802rem;
+}
+
+h3 {
+    font-size: 1.602rem;
+}
+
+h4 {
+    font-size: 1.424rem;
+}
+
+h5 {
+    font-size: 1.266rem;
+    margin-bottom: 0.5rem;
+}
+
+h6 {
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+}
+
+p {
+    color: inherit;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+strong {
+    font-weight: 550;
+    color: inherit;
+}
+
+input[type='text'],
+select {
+    font-family: monospace, sans-serif;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 0 0 1px var(--mono-400) inset;
+    cursor: text;
+}
+
+input[type='text']:hover,
+select:hover {
+    box-shadow: 0 0 0 2px var(--mono-400) inset;
+}
+
+input[type='text']:focus,
+select:focus {
+    box-shadow: 0 0 0 2px var(--accent-100) inset;
+}
+
+select {
+    cursor: pointer;
+}
+
+input[type='submit'],
+input[type='reset'] {
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    padding: 1rem 1.25rem;
+    flex-grow: 2;
+}
+
+input[type='submit'] {
+    background: var(--accent-100);
+    box-shadow: 0 0 0 1px var(--mono-500) inset;
+    color: #FFFFFF;
+    flex-grow: 2;
+}
+
+input[type='reset'] {
+    box-shadow: 0 0 0 1px var(--mono-400) inset;
+    flex-shrink: 2;
+    flex-grow: 1;
+}
+
+input[type='submit']:hover {
+    background: var(--accent-200);
+}
+
+input[type='submit']:active {
+    background: var(--accent-300);
+}
+
+input[type='reset']:hover {
+    box-shadow: 0 0 0 1px var(--mono-400) inset;
+    background-color: var(--mono-500);
+}
+
+input[type='reset']:active {
+    box-shadow: 0 0 0 1px var(--mono-400) inset;
+    background: var(--mono-400);
+}
+
+button {
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    padding: 0rem 1.25rem;
+    box-shadow: 0 0 0 1px var(--mono-400) inset;
+}
+
+button:hover {
+    box-shadow: 0 0 0 1px var(--mono-400) inset;
+    background-color: var(--mono-500);
+}
+
+button:active {
+    box-shadow: 0 0 0 1px var(--mono-400) inset;
+    background: var(--mono-400);
+}
+
+input[type='submit']:disabled,
+input[type='reset']:disabled,
+button:disabled,
+select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.switch {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    width: 46px;
+}
+
+.track {
+    cursor: pointer;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    background-color: var(--mono-300);
+    width: 100%;
+    height: 100%;
+    padding: 3px;
+    border-radius: 100px;
+}
+
+.track:hover {
+    background-color: var(--mono-200);
+}
+
+.track:active {
+    background-color: var(--accent-300);
+}
+
+.thumb {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 24px;
+    height: 24px;
+    pointer-events: none;
+    border-radius: 100%;
+    box-shadow: 0 0 0 9.5px #FFFFFF inset;
+}
+
+input:checked + .track {
+  background-color: var(--accent-100);
+  justify-content: flex-end;
+}
+
+input:checked + .track:hover {
+  background-color: var(--accent-200);
+}
+
+input:checked + .track:active {
+  background-color: var(--accent-300);
+}
+
+.horizontal-frame {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    gap: 1.0rem;
+    margin-top: 1.0rem;
+}
+
+.input-with-button {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    gap: 0.5rem;
+    justify-content: flex-start;
+    align-content: stretch;
+    align-items: stretch;
+}
+
+.full-width {
+    flex: 1 !important;
+}
+
+section.info {
+    border-left: 3px solid var(--semantic-info-100);
+    background: var(--semantic-info-50);
+    color: var(--semantic-info-300);
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0rem;
+}
+
+section.info p {
+    margin: 0;
+}

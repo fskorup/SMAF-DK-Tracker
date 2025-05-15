@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>SMAF-DK-SAP</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="script.js"></script>
+</head>
+
+<body>
+    <div class="success-frame" id="success" style="display: none;">
+        <header>
+            <!-- <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14.3633 1.89684C17.6169 1.16172 21.012 1.43175 24.1016 2.66149L24.7158 2.92028L24.8525 2.98961C25.5121 3.36764 25.7916 4.19139 25.4756 4.90074C25.1595 5.61022 24.3599 5.953 23.6377 5.7152L23.4941 5.66051L22.9922 5.4486C20.4644 4.44247 17.6865 4.22214 15.0244 4.8236C12.185 5.46523 9.62866 7.0072 7.73731 9.22008C5.84597 11.433 4.72093 14.1982 4.5293 17.1029C4.33776 20.0077 5.09036 22.897 6.67481 25.3392C8.25924 27.7813 10.5907 29.6457 13.3213 30.6547C16.0521 31.6635 19.0364 31.7633 21.8281 30.9379C24.6197 30.1124 27.0695 28.4061 28.8125 26.0746C30.5553 23.7432 31.4981 20.9111 31.5 18.0004V16.6205C31.5 15.792 32.1716 15.1205 33 15.1205C33.8284 15.1205 34.5 15.792 34.5 16.6205V18.0013C34.4979 21.5593 33.3462 25.0217 31.2158 27.8714C29.0855 30.7211 26.0907 32.8059 22.6787 33.8148C19.2667 34.8236 15.6197 34.7021 12.2822 33.4691C8.94463 32.236 6.09481 29.9569 4.15821 26.972C2.22163 23.9871 1.30203 20.456 1.53614 16.9056C1.77031 13.3554 3.14534 9.97555 5.45704 7.27086C7.76873 4.56624 10.8929 2.68101 14.3633 1.89684ZM32.0537 4.83629C32.6429 4.35602 33.5115 4.39073 34.0606 4.93981C34.6462 5.52561 34.6463 6.47518 34.0606 7.0609L19.0606 22.0609C18.5114 22.6098 17.6428 22.6438 17.0537 22.1634L16.9395 22.0609L12.4395 17.5609L12.3359 17.4466C11.8557 16.8576 11.8905 15.9889 12.4395 15.4398C12.9885 14.8907 13.8571 14.856 14.4463 15.3363L14.5606 15.4398L18 18.8793L31.9395 4.93981L32.0537 4.83629Z"/>
+            </svg> -->
+                
+            <h1>Configuration successfully saved!</h1>
+            <p>SMAF-DK has accepted and stored your configuration parameters in its memory and will now reboot to apply the configuration.</p>
+
+            <section class='info'>
+                <p><strong>Note:</strong> If SMAF-DK is not connecting to Wi-Fi or not sending data to the MQTT broker, try reconfiguring it or check your router and broker settings.</p>
+            </section>
+        </header>
+    </div>
+
+    <div class="content-frame" id="content">
+        <header>
+            <!-- <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24.6211 10.5L31.5 17.3789V10.5H24.6211ZM24.6211 19.5H29.3789L20.3789 10.5H15.6211L24.6211 19.5ZM15.6211 19.5H20.3789L11.3789 10.5H6.62109L15.6211 19.5ZM11.3789 19.5L4.5 12.6211V19.5H11.3789ZM34.5 19.5C34.5 21.1569 33.1569 22.5 31.5 22.5H27V31.5C27 32.3284 26.3284 33 25.5 33C24.6716 33 24 32.3284 24 31.5V22.5H12V31.5C12 32.3284 11.3284 33 10.5 33C9.67157 33 9 32.3284 9 31.5V22.5H4.5C2.84315 22.5 1.5 21.1569 1.5 19.5V10.5C1.5 8.84315 2.84315 7.5 4.5 7.5H9V4.5C9 3.67157 9.67157 3 10.5 3C11.3284 3 12 3.67157 12 4.5V7.5H24V4.5C24 3.67157 24.6716 3 25.5 3C26.3284 3 27 3.67157 27 4.5V7.5H31.5C33.1569 7.5 34.5 8.84315 34.5 10.5V19.5Z"/>
+            </svg> -->
+                
+            <h1>Ready to update<br>your settings?</h1>
+            <p>Welcome to SMAF-DK-SAP configuration hub! Quickly set up your SMAF-DK device to connect via WiFi and transmit data using MQTT.</p>
+        </header>
+
+        <section>
+            <h4>WiFi router<br>configuration</h4>
+            <p>Secure connectivity by entering your WiFi details - SSID and password. SMAF-DK stays linked to the network for seamless operation.</p>
+
+            <div class="input-frame">
+                <label>SSID Name:</label>
+                <div class="input-with-button">
+                    <select class="full-width" name="ssidNames" id="ssidNames">
+                        <!-- JS will dynamically populate this -->
+                    </select>
+                    <button id="refreshButton" type="button" onclick="onRefreshWiFiNetworkList()">Refresh</button>
+                </div>
+                <mark>Can't be empty.</mark>
+            </div>
+
+            <div class="input-frame">
+                <label>SSID Password:</label>
+                <input type="text" id="ssidPassword" name="ssidPassword">
+            </div>
+        </section>
+
+        <section style="display: auto;">
+            <h4>MQTT server<br>configuration</h4>
+            <p>Tune communication with MQTT server settings. Enter the broker's address, port, and authentication details for a robust connection.</p>
+
+            <div class="input-frame">
+                <label>MQTT Server:</label>
+                <input type="text" id="mqttServer" name="mattServer">
+                <mark>Can't be empty.</mark>
+            </div>
+
+            <div class="input-frame">
+                <label>MQTT Server Port:</label>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" id="mqttServerPort" name="mqttServerPort">
+                <mark>Can't be empty.</mark>
+            </div>
+
+            <div class="input-frame">
+                <label>MQTT Username:</label>
+                <input type="text" id="mqttUsername" name="mqttUsername">
+            </div>
+
+            <div class="input-frame">
+                <label>MQTT Password:</label>
+                <input type="text" id="mqttPassword" name="mqttPassword">
+            </div>
+        </section>
+
+        <section style="display: auto;">
+            <h4>MQTT client & topic<br>configuration</h4>
+            <p>Personalize MQTT settings for SMAF-DK by defining client specifics and choosing an optimal topic. Seamless communication is just a click away.</p>
+
+            <div class="input-frame">
+                <label>MQTT Client ID:</label>
+                <div class="input-with-button">
+                    <input class="full-width" type="text" id="mqttClientId" name="mqttClientId">
+                    <button type="button" onclick="populateRandomString('mqttClientId')">Generate</button>
+                </div>
+                <mark>Can't be empty.</mark>
+            </div>
+
+            <div class="input-frame">
+                <label>MQTT Topic:</label>
+                <input type="text" id="mqttTopic" name="mqttTopic">
+                <mark>Can't be empty.</mark>
+            </div>
+        </section>
+
+        <section style="display: auto;">
+            <h4>Device<br>status</h4>
+            <p>Your device is equipped with a buzzer and two RGB LEDs to show various statuses of connection. You can enable or disable those if you are irritated by the power of the LEDs or the sound of the buzzer.</p>
+            
+            <div>
+                <div class="checkbox-frame">
+                    <label>Enable RGB LEDs</label>
+                    <label class="switch">
+                        <input type="checkbox" name="rgb" value="true" checked>
+                        <div class="track">
+                            <div class="thumb"></div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="checkbox-frame">
+                    <label>Enable buzzer</label>
+                    <label class="switch">
+                        <input type="checkbox" name="buzzer" value="true" checked>
+                        <div class="track">
+                            <div class="thumb"></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h4>Finish<br>configuration</h4>
+            <p>Ready to roll? Click "Upload configuration" to apply changes, and SMAF-DK will initiate its own reset to seamlessly implement the updated settings.</p>
+
+            <section class='info'>
+                <p><strong>Note:</strong> Ensure all necessary data is entered; SMAF-DK won't connect or transmit data without it.</p>
+            </section>
+
+            <div class="horizontal-frame">
+                <!-- <input id="reset" type="reset" onclick="resetFormFields()" value="Reset form"> -->
+                <input id="uploadConfig" type="submit" onclick="onSubmit()" value="Upload configuration">
+            </div>
+        </section>
+    </div>
+</body>
+
+</html>
