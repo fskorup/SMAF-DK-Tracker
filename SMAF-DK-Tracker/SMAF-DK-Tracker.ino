@@ -274,15 +274,18 @@ void loop() {
   // Get measurements from the IMU sensor. This must be called before accessing the sensor data, otherwise it will never update.
   imu.getSensorData();
 
-  // Store measurements from IMU sensor and log them.
+  // Accelerometer data.
   accelerometerX = imu.data.accelX;
   accelerometerY = imu.data.accelY;
   accelerometerZ = imu.data.accelZ;
+  accelerometerMagnitude = sqrt(accelerometerX * accelerometerX + accelerometerY * accelerometerY + accelerometerZ * accelerometerZ);
+
+  // Gyroscope data.
   gyroscopeX = imu.data.gyroX;
   gyroscopeY = imu.data.gyroY;
   gyroscopeZ = imu.data.gyroZ;
 
-  accelerometerMagnitude = sqrt(accelerometerX * accelerometerX + accelerometerY * accelerometerY + accelerometerZ * accelerometerZ);
+  // Log IMU data.
   debug(LOG, "IMU acceleorometer: X %sm/s^2, Y %sm/s^2, Z %sm/s^2, Magnitude %sm/s^2.", String(accelerometerX).c_str(), String(accelerometerY).c_str(), String(accelerometerZ).c_str(), String(accelerometerMagnitude).c_str());
   debug(LOG, "IMU gyroscope: X %sdeg/s, Y %sdeg/s, Z %sdeg/s", String(gyroscopeX).c_str(), String(gyroscopeY).c_str(), String(gyroscopeZ).c_str());
 
@@ -320,7 +323,7 @@ void loop() {
     if (gnssFixOk && latitude != 0 && longitude != 0) {
       deviceStatus = READY_TO_SEND;
       debug(SCS, "Device is ready to post data, %d satellites locked.", satellitesInRange);
-      debug(CMD, "Posting data package to MQTT broker '%s' on topic '%s'.", mqttServerAddress, mqttTopic);
+      debug(CMD, "Posting data package to MQTT broker '%s' on topic '%s'.", mqttServerAddress.c_str(), mqttTopic.c_str());
       mqtt.publish(mqttTopic.c_str(), mqttData.c_str(), true);
     } else {
       deviceStatus = WAITING_GNSS;

@@ -1,6 +1,6 @@
 /**
-* AudioVisualNotifications.cpp
-* Declaration of the AudioVisualNotifications library for RGB LED and audio status indication.
+* @file AudioVisualNotifications.cpp
+* @brief Declaration of the AudioVisualNotifications library for RGB LED and audio status indication.
 *
 * This file contains the declaration for the AudioVisualNotifications library, which facilitates
 * the indication of device status through a NeoPixel LED and audio feedback. The library provides separate functions

@@ -1,6 +1,6 @@
 /**
-* Helpers.h
-* Implementation of helper functions for Arduino project.
+* @file Helpers.h
+* @brief Implementation of helper functions for Arduino project.
 *
 * This file contains the implementation of helper functions used in the Arduino project.
 *

@@ -1,6 +1,6 @@
 /**
-* WiFiConfig.h
-* Declaration of the WiFi and MQTT configuration library.
+* @file WiFiConfig.h
+* @brief Declaration of the WiFi and MQTT configuration library.
 *
 * This file contains the declaration for the WiFiConfig library, which facilitates
 * the indication of device status through a NeoPixel LED and audio feedback. The library provides separate functions
