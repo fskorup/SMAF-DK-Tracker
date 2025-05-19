@@ -509,10 +509,14 @@ String constructMqttMessage(uint8_t satellitesInRange, int32_t longitude, int32_
   message += quotation("values") + ":{";
   message += quotation("x") + ":" + String(accelerometerX, 2) + ",";
   message += quotation("y") + ":" + String(accelerometerY, 2) + ",";
-  message += quotation("z") + ":" + String(accelerometerZ, 2) + ",";
-  message += quotation("magnitude") + ":" + String(accelerometerMagnitude, 2);
+  message += quotation("z") + ":" + String(accelerometerZ, 2);
   message += "},";
   message += quotation("unit") + ":" + quotation("m/s^2");
+  message += "},";
+  message += quotation("acceleration") + ":";
+  message += "{";
+  message += quotation("value") + ":" + String(accelerometerMagnitude, 2) + ",";
+  message += quotation("unit") + ":" + quotation("G");
   message += "},";
   message += quotation("gyroscope") + ":{";
   message += quotation("values") + ":{";
