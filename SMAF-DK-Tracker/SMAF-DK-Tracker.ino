@@ -28,7 +28,6 @@
 #include "AudioVisualNotifications.h"
 #include "WiFiConfig.h"
 #include "Helpers.h"
-#include "time.h"
 #include "SparkFun_u-blox_GNSS_v3.h"
 #include "SparkFun_BMI270_Arduino_Library.h"
 
@@ -110,11 +109,6 @@ BMI270 imu;
 // Accelerometer and gyroscope readings.
 float accelerometerX, accelerometerY, accelerometerZ, accelerometerMagnitude;
 float gyroscopeX, gyroscopeY, gyroscopeZ;
-
-// NTP Server configuration.
-const char* ntpServer = "europe.pool.ntp.org";  // Global - pool.ntp.org
-const long gmtOffset = 0;
-const int dstOffset = 0;
 
 /**
 * @brief Initializes the SMAF-Development-Kit and runs once at the beginning.
@@ -366,10 +360,6 @@ void connectToNetwork() {
 
     // Log successful connection and set device status.
     debug(SCS, "Device connected to '%s'.", networkName.c_str());
-
-    // Initialize NTP server time configuration.
-    configTime(gmtOffset, dstOffset, ntpServer);
-    debug(SCS, "NTP Server configured");
   }
 }
 
@@ -422,21 +412,25 @@ void connectToMqttBroker() {
 *
 * This function retrieves the current UTC time using the system time. If successful,
 * it formats the time into a UTC date time string (e.g., "2024-06-20T20:56:59Z").
-* If the UTC time cannot be obtained, it returns "Unknown".
+* If the UTC time cannot be obtained, it returns "unknown".
 *
-* @return A String containing the current UTC time in the specified format, or "Unknown" if the time cannot be retrieved.
+* @return A String containing the current UTC time in the specified format, or "unknown" if the time cannot be retrieved.
 */
 String getUtcTimeString() {
-  struct tm timeinfo;
-
-  if (!getLocalTime(&timeinfo)) {
-    return "Unknown";
+  if (!gnss.getTimeValid()) {
+    return "unknown";
   }
 
-  // Create a buffer to hold the formatted time string
-  char buffer[80];
-  strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
-  return String(buffer);
+  char isoTime[25];
+  snprintf(isoTime, sizeof(isoTime), "%04d-%02d-%02dT%02d:%02d:%02dZ",
+           gnss.getYear(),
+           gnss.getMonth(),
+           gnss.getDay(),
+           gnss.getHour(),
+           gnss.getMinute(),
+           gnss.getSecond());
+
+  return String(isoTime);
 }
 
 /**
