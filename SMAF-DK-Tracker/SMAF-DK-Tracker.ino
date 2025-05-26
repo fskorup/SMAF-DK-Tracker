@@ -245,9 +245,6 @@ void setup() {
   // Set the I2C port to output UBX only for GNSS/GPS (turn off NMEA noise).
   gnss.setI2COutput(COM_TYPE_UBX);
 
-  // Initialize NTP server time configuration.
-  configTime(gmtOffset, dstOffset, ntpServer);
-
   // MQTT Client message buffer size.
   // Default is set to 256.
   mqtt.setBufferSize(1024);
@@ -369,6 +366,10 @@ void connectToNetwork() {
 
     // Log successful connection and set device status.
     debug(SCS, "Device connected to '%s'.", networkName.c_str());
+
+    // Initialize NTP server time configuration.
+    configTime(gmtOffset, dstOffset, ntpServer);
+    debug(SCS, "NTP Server configured");
   }
 }
 
