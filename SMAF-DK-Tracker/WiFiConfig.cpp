@@ -34,6 +34,7 @@
 #include <LittleFS.h>
 #include <Preferences.h>
 #include <ArduinoJson.h>
+#include <ESPmDNS.h>
 
 AsyncWebServer server(80);  // HTTP server running on port 80.
 AsyncWebSocket ws("/ws");   // WebSocket endpoint at /ws.
@@ -139,16 +140,28 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
 void setupWiFiConfig() {
   WiFi.softAP("SMAD-DK-SAP-Configuration", "0123456789");
 
+  // Try to mount the LittleFS filesystem.
+  // If it fails, print an error and stop setup by returning.
+  // The 'true' argument will format the filesystem if mounting fails the first time.
   if (!LittleFS.begin(true)) {
-    Serial.println("LittleFS mount failed");
+    Serial.println("LittleFS mount failed.");
     return;
   }
 
-  //   Serial.println("Files in LittleFS:");
-  //   File root = LittleFS.open("/");
-  //   while (File file = root.openNextFile()) {
-  //     Serial.println(file.name());
-  //   }
+  // Optional: list all files in the LittleFS filesystem
+  // Uncomment to debug or verify the contents
+  // File root = LittleFS.open("/");
+  // Serial.println("Files in LittleFS:");
+  // while (File file = root.openNextFile()) {
+  //   Serial.println(file.name());
+  // }
+
+  // Try to start mDNS with the hostname "config".
+  // This allows the device to be reached via 'http://config.local'
+  // If it fails, print a warning but continue running the program.
+  if (!MDNS.begin("config")) {
+    Serial.println("mDNS setup failed. Continuing without mDNS.");
+  }
 
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
