@@ -30,6 +30,7 @@
 #include "Helpers.h"
 #include "SparkFun_u-blox_GNSS_v3.h"
 #include "SparkFun_BMI270_Arduino_Library.h"
+#include "ArduinoJson.h"
 
 // Define constants for ESP32 core numbers.
 #define ESP32_CORE_PRIMARY 0    // Numeric value representing the primary core.
@@ -86,6 +87,10 @@ bool audioNotifications = false;
 */
 WiFiClient wifiClient;          // Manages Wi-Fi connection.
 PubSubClient mqtt(wifiClient);  // Uses WiFiClient for MQTT communication.
+
+// JSON data handling for retained message.
+String lastValidJson = "";        // Holds retained MQTT message.
+bool fallbackDataLoaded = false;  // Flag to indicate we received a retained message.
 
 /**
 * @brief Constructs an instance of the AudioVisualNotifications class.
@@ -293,30 +298,39 @@ void loop() {
     int32_t altitude = gnss.getAltitudeMSL();
     String timestamp = getUtcTimeString();
 
-    // Store MQTT data here.
-    String mqttData = constructMqttMessage(
-      satellitesInRange,
-      longitude,
-      latitude,
-      altitude,
-      speed,
-      heading,
-      timestamp,
-      accelerometerX,
-      accelerometerY,
-      accelerometerY,
-      accelerometerMagnitude,
-      gyroscopeX,
-      gyroscopeY,
-      gyroscopeZ);
-
     // If the device is ready to send, publish a message to the MQTT broker.
     if (gnssFixOk && latitude != 0 && longitude != 0) {
       deviceStatus = READY_TO_SEND;
       debug(SCS, "Device is ready to post data, %d satellites locked.", satellitesInRange);
       debug(CMD, "Posting data package to MQTT broker '%s' on topic '%s'.", mqttServerAddress.c_str(), mqttTopic.c_str());
+
+      // Store MQTT data here.
+      String mqttData = constructMqttMessage(satellitesInRange, longitude, latitude, altitude, speed, heading, timestamp, accelerometerX, accelerometerY, accelerometerY, accelerometerMagnitude, gyroscopeX, gyroscopeY, gyroscopeZ, false);
       mqtt.publish(mqttTopic.c_str(), mqttData.c_str(), true);
-    } else {
+    } 
+    /*
+    else if (fallbackDataLoaded && !gnssFixOk) {
+      // deviceStatus = WAITING_GNSS;
+      // debug(LOG, "No GNSS fix. Posting retained data instead.");
+      // mqtt.publish(mqttTopic.c_str(), lastValidJson.c_str(), true);
+
+      deviceStatus = WAITING_GNSS;
+      debug(LOG, "No GNSS fix. Posting retained data instead.");
+
+      JsonDocument doc;
+      DeserializationError error = deserializeJson(doc, lastValidJson);
+
+      if (!error) {
+        doc["isStale"] = true;  // Inject flag here only
+        String stalePayload;
+        serializeJson(doc, stalePayload);
+        mqtt.publish(mqttTopic.c_str(), stalePayload.c_str(), true);
+      } else {
+        debug(ERR, "Failed to re-parse fallback data.");
+      }
+    } 
+    */
+    else {
       deviceStatus = WAITING_GNSS;
       debug(ERR, "Device is not ready to post data. Searching for satellites, %d locked.", satellitesInRange);
     }
@@ -446,6 +460,20 @@ String getUtcTimeString() {
 void serverResponse(char* topic, byte* payload, unsigned int length) {
   debug(SCS, "Server '%s' responded.", mqttServerAddress.c_str());
 
+  // Reconstruct payload into a String.
+  // JsonDocument doc;
+  // DeserializationError error = deserializeJson(doc, payload);
+
+  // fallbackDataLoaded = !error;
+
+  // if (fallbackDataLoaded) {
+  //   lastValidJson = "";
+  //   serializeJson(doc, lastValidJson);
+  //   debug(SCS, "Retained message cached as fallback.");
+  // } else {
+  //   debug(ERR, "Received retained MQTT message was not valid JSON.");
+  // }
+
   // Reset WDT.
   if (deviceStatus != MAINTENANCE_MODE) {
     resetWatchdog();
@@ -468,63 +496,55 @@ void serverResponse(char* topic, byte* payload, unsigned int length) {
 * @param heading Heading direction in microdegrees (degrees * 1E-5).
 * @return A String containing the constructed MQTT message in JSON format.
 */
-String constructMqttMessage(uint8_t satellitesInRange, int32_t longitude, int32_t latitude, int32_t altitude, int32_t speed, int32_t heading, String timestamp, float accelerometerX, float accelerometerY, float accelerometerZ, float accelerometerMagnitude, float gyroscopeX, float gyroscopeY, float gyroscopeZ) {
-  String message;
+String constructMqttMessage(uint8_t satellitesInRange, int32_t longitude, int32_t latitude, int32_t altitude, int32_t speed, int32_t heading, String timestamp, float accelerometerX, float accelerometerY, float accelerometerZ, float accelerometerMagnitude, float gyroscopeX, float gyroscopeY, float gyroscopeZ, bool isStale) {
+  JsonDocument jsonDocument;
 
-  message += "{";
-  message += quotation("timestamp") + ":" + quotation(timestamp) + ",";
-  message += quotation("satellites") + ":" + String(satellitesInRange) + ",";
-  message += quotation("longitude") + ":";
-  message += "{";
-  message += quotation("value") + ":" + String((longitude * 1E-7), 6) + ",";
-  message += quotation("unit") + ":" + quotation("deg");
-  message += "},";
-  message += quotation("latitude") + ":";
-  message += "{";
-  message += quotation("value") + ":" + String((latitude * 1E-7), 6) + ",";
-  message += quotation("unit") + ":" + quotation("deg");
-  message += "},";
-  message += quotation("altitude") + ":";
-  message += "{";
-  message += quotation("value") + ":" + String(int((altitude / 1000.0))) + ",";
-  message += quotation("unit") + ":" + quotation("m");
-  message += "},";
-  message += quotation("speed") + ":";
-  message += "{";
-  message += quotation("value") + ":" + String(int((speed / 1000.0) * 3.6)) + ",";
-  message += quotation("unit") + ":" + quotation("km/h");
-  message += "},";
-  message += quotation("heading") + ":";
-  message += "{";
-  message += quotation("value") + ":" + String((heading * 1E-5), 0) + ",";
-  message += quotation("unit") + ":" + quotation("deg");
-  message += "},";
-  message += quotation("imu") + ":{";
-  message += quotation("accelerometer") + ":{";
-  message += quotation("values") + ":{";
-  message += quotation("x") + ":" + String(accelerometerX, 2) + ",";
-  message += quotation("y") + ":" + String(accelerometerY, 2) + ",";
-  message += quotation("z") + ":" + String(accelerometerZ, 2);
-  message += "},";
-  message += quotation("unit") + ":" + quotation("m/s^2");
-  message += "},";
-  message += quotation("acceleration") + ":";
-  message += "{";
-  message += quotation("value") + ":" + String(accelerometerMagnitude, 2) + ",";
-  message += quotation("unit") + ":" + quotation("G");
-  message += "},";
-  message += quotation("gyroscope") + ":{";
-  message += quotation("values") + ":{";
-  message += quotation("x") + ":" + String(gyroscopeX, 2) + ",";
-  message += quotation("y") + ":" + String(gyroscopeY, 2) + ",";
-  message += quotation("z") + ":" + String(gyroscopeZ, 2);
-  message += "},";
-  message += quotation("unit") + ":" + quotation("deg/s");
-  message += "}";
-  message += "}";
-  message += "}";
+  jsonDocument["isStale"] = isStale;
+  jsonDocument["timestamp"] = timestamp;
+  jsonDocument["satellites"] = satellitesInRange;
 
-  return message;
+  JsonObject lon = jsonDocument["longitude"].to<JsonObject>();
+  lon["value"] = longitude * 1e-7;
+  lon["unit"] = "deg";
+
+  JsonObject lat = jsonDocument["latitude"].to<JsonObject>();
+  lat["value"] = latitude * 1e-7;
+  lat["unit"] = "deg";
+
+  JsonObject alt = jsonDocument["altitude"].to<JsonObject>();
+  alt["value"] = round((altitude / 1000.0) * 100.0) / 100.0;
+  alt["unit"] = "m";
+
+  JsonObject spd = jsonDocument["speed"].to<JsonObject>();
+  spd["value"] = round(((speed / 1000.0) * 3.6) * 100.0) / 100.0;
+  spd["unit"] = "km/h";
+
+  JsonObject hdg = jsonDocument["heading"].to<JsonObject>();
+  hdg["value"] = round((heading * 1e-5) * 100.0) / 100.0;
+  hdg["unit"] = "deg";
+
+  JsonObject imu = jsonDocument["imu"].to<JsonObject>();
+  JsonObject acc = imu["accelerometer"].to<JsonObject>();
+  JsonObject accVals = acc["values"].to<JsonObject>();
+  accVals["x"] = round(accelerometerX * 100.0) / 100.0;
+  accVals["y"] = round(accelerometerY * 100.0) / 100.0;
+  accVals["z"] = round(accelerometerZ * 100.0) / 100.0;
+  acc["unit"] = "m/s^2";
+
+  JsonObject accel = imu["acceleration"].to<JsonObject>();
+  accel["value"] = round(accelerometerMagnitude * 100.0) / 100.0;
+  accel["unit"] = "G";
+
+  JsonObject gyr = imu["gyroscope"].to<JsonObject>();
+  JsonObject gyrVals = gyr["values"].to<JsonObject>();
+  gyrVals["x"] = round(gyroscopeX * 100.0) / 100.0;
+  gyrVals["y"] = round(gyroscopeY * 100.0) / 100.0;
+  gyrVals["z"] = round(gyroscopeZ * 100.0) / 100.0;
+  gyr["unit"] = "deg/s";
+
+  String output;
+  serializeJson(jsonDocument, output);
+  return output;
 }
 
 /**
