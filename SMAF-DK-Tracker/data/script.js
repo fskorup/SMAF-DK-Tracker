@@ -26,6 +26,28 @@ window.addEventListener('load', () => {
             document.getElementById("success").style.display = "block";
             document.getElementById("success").style.visibility = "visible";
             document.getElementById("content").style.display = "none";
+        } else if (data.action === "ota_result") {
+            console.log("OTA update result:", data.status);
+
+            if (data.status === "success") {
+                alert("Firmware update successful! Rebooting...");
+            } else {
+                alert("Firmware update failed: " + (data.error || "Unknown error"));
+            }
+
+            const fileInput = document.getElementById("firmware");
+            const uploadButton = document.getElementById("uploadFirmwareButton");
+
+            if (uploadButton) {
+                uploadButton.textContent = 'Update Firmware';
+                uploadButton.disabled = false;
+            }
+
+            if (fileInput) {
+                fileInput.disabled = false;
+            }
+        } else if (data.action === "ota_progress") {
+            console.log(`OTA Progress: ${data.progress}%`);
         } else {
             populateForm(data); // handle get_config response
         }
@@ -227,6 +249,57 @@ function onSubmit() {
     };
 
     sendConfig(config);
+}
+
+function onFirmwareUpdate() {
+    const fileInput = document.getElementById("firmware");
+    const uploadButton = document.getElementById("uploadFirmwareButton");
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Please select a firmware file first.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("firmware", file);
+
+    uploadButton.textContent = 'Updating';
+    uploadButton.disabled = true;
+    fileInput.disabled = true;
+
+    // fetch("/update", {
+    //     method: "POST",
+    //     body: formData
+    // }).catch(err => {
+    //     uploadButton.textContent = 'Update Firmware';
+    //     uploadButton.disabled = false;
+    //     fileInput.disabled = false;
+    // });
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/update", true);
+
+    xhr.upload.onprogress = function (event) {
+        if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            uploadButton.textContent = `Updating ${percent}%`;
+        }
+    };
+
+    xhr.onload = function () {
+        console.log("Upload finished.");
+        // Don’t show success here — wait for WebSocket 'ota_result'
+    };
+
+    xhr.onerror = function () {
+        alert("Firmware upload failed.");
+        uploadButton.textContent = "Upload firmware";
+        uploadButton.disabled = false;
+        fileInput.disabled = false;
+    };
+
+    xhr.send(formData);
 }
 
 function validateForm() {

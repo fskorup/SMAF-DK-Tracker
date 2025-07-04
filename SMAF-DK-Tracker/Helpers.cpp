@@ -63,7 +63,7 @@ void debug(MessageTypeEnum messageType, const char* format, ...) {
   // Format the variable arguments directly.
   va_list args;
   va_start(args, format);
-  char buffer[256];  // Adjust the buffer size according to your needs.
+  char buffer[1024];  // Adjust the buffer size according to your needs.
   vsnprintf(buffer, sizeof(buffer), format, args);
   va_end(args);
 

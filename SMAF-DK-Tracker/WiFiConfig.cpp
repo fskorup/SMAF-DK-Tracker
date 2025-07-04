@@ -35,6 +35,7 @@
 #include <Preferences.h>
 #include <ArduinoJson.h>
 #include <ESPmDNS.h>
+#include <Update.h>
 
 AsyncWebServer server(80);  // HTTP server running on port 80.
 AsyncWebSocket ws("/ws");   // WebSocket endpoint at /ws.
@@ -174,6 +175,75 @@ void setupWiFiConfig() {
   // Serve static files for web page.
   server.serveStatic("/style.css", LittleFS, "/style.css");
   server.serveStatic("/script.js", LittleFS, "/script.js");
+
+  server.on(
+    "/update", HTTP_POST,
+    [](AsyncWebServerRequest *request) {
+      bool hasError = Update.hasError();
+
+      request->send(200);  // Minimal and silent response
+
+      // Restart after delay only if successful
+      if (!hasError) {
+        // Give time to flush and for browser to read response
+        Serial.println("[OTA] Waiting 2 seconds before restart...");
+        delay(2000);
+        ESP.restart();
+      }
+    },
+    [](AsyncWebServerRequest *request, String filename, size_t index,
+       uint8_t *data, size_t len, bool final) {
+      if (!index) {
+        Serial.printf("\n[OTA] Start: %s\n", filename.c_str());
+
+        if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
+          Serial.printf("[OTA] Begin failed: %s\n", Update.errorString());
+
+          JsonDocument doc;
+          doc["action"] = "ota_result";
+          doc["status"] = "failure";
+          doc["error"] = Update.errorString();
+
+          String json;
+          serializeJson(doc, json);
+          ws.textAll(json);  // Notify all clients immediately
+        }
+      }
+
+      if (Update.write(data, len) != len) {
+        Serial.printf("[OTA] Write failed: %s\n", Update.errorString());
+      } else {
+        Serial.printf("[OTA] Written %u bytes at offset %u\n", len, index);
+      }
+
+      if (final) {
+        if (Update.end(true)) {
+          Serial.println("[OTA] Update completed successfully.");
+
+          // Send WebSocket response to all connected clients
+          JsonDocument doc;
+          doc["action"] = "ota_result";
+          doc["status"] = "success";
+
+          String json;
+          serializeJson(doc, json);
+          ws.textAll(json);  // <--- sends to all connected WS clients
+          delay(800);
+        } else {
+          Serial.printf("[OTA] Update failed: %s\n", Update.errorString());
+
+          JsonDocument doc;
+          doc["action"] = "ota_result";
+          doc["status"] = "failure";
+          doc["error"] = Update.errorString();
+
+          String json;
+          serializeJson(doc, json);
+          ws.textAll(json);  // <--- notify failure
+          delay(800);
+        }
+      }
+    });
 
   server.begin();
 }

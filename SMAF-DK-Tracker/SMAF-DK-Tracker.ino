@@ -24,13 +24,14 @@
 */
 
 #include "WiFi.h"
-#include "PubSubClient.h"
+#include "ArduinoMqttClient.h"
 #include "AudioVisualNotifications.h"
 #include "WiFiConfig.h"
 #include "Helpers.h"
 #include "SparkFun_u-blox_GNSS_v3.h"
 #include "SparkFun_BMI270_Arduino_Library.h"
 #include "ArduinoJson.h"
+#include "Structs.h"
 
 // Define constants for ESP32 core numbers.
 #define ESP32_CORE_PRIMARY 0    // Numeric value representing the primary core.
@@ -67,30 +68,14 @@ DeviceStatusEnum deviceStatus = NOT_READY;  // Initial state is set to NONE.
 // Function prototype for the DeviceStatusThread function.
 void DeviceStatusThread(void* pvParameters);
 
-// Preferences variables.
-String networkName = String();
-String networkPass = String();
-String mqttServerAddress = String();
-String mqttUsername = String();
-String mqttPass = String();
-String mqttClientId = String();
-String mqttTopic = String();
-uint16_t mqttServerPort = 0;
-bool visualNotifications = false;
-bool audioNotifications = false;
-
 /**
 * @brief WiFiClient and PubSubClient instances for establishing MQTT communication.
 * 
 * The WiFiClient instance, named wifiClient, is used to manage the Wi-Fi connection.
 * The PubSubClient instance, named mqtt, relies on the WiFiClient for MQTT communication.
 */
-WiFiClient wifiClient;          // Manages Wi-Fi connection.
-PubSubClient mqtt(wifiClient);  // Uses WiFiClient for MQTT communication.
-
-// JSON data handling for retained message.
-String lastValidJson = "";        // Holds retained MQTT message.
-bool fallbackDataLoaded = false;  // Flag to indicate we received a retained message.
+WiFiClient wifiClient;              // Manages Wi-Fi connection.
+MqttClient mqttClient(wifiClient);  // Uses WiFiClient for MQTT communication.
 
 /**
 * @brief Constructs an instance of the AudioVisualNotifications class.
@@ -111,9 +96,12 @@ SFE_UBLOX_GNSS gnss;
 // IMU (Bosch BMI270) library.
 BMI270 imu;
 
-// Accelerometer and gyroscope readings.
-float accelerometerX, accelerometerY, accelerometerZ, accelerometerMagnitude;
-float gyroscopeX, gyroscopeY, gyroscopeZ;
+// Structs definition from 'Struct.h' file.
+PreferencesData preferencesData;
+AccelerometerData accelerometerData;
+GyroscopeData gyroscopeData;
+PositioningData actualPositioningData;
+PositioningData fallbackPositioningData;
 
 /**
 * @brief Initializes the SMAF-Development-Kit and runs once at the beginning.
@@ -138,8 +126,7 @@ void setup() {
   Serial.begin(115200);
 
   // Set Wire library custom I2C pins and start the Wire library.
-  // Example usage:
-  // Wire.setPins(SDA_PIN_NUMBER, SCL_PIN_NUMBER);
+  // Example usage: Wire.setPins(SDA_PIN_NUMBER, SCL_PIN_NUMBER);
   Wire.setPins(I2CPins.SDA, I2CPins.SCL);
   Wire.begin();
 
@@ -149,26 +136,26 @@ void setup() {
   // Load and check configuration.
   WiFiConfig config = loadWiFiConfig();
 
-  networkName = config.ssidName;
-  networkPass = config.ssidPassword;
-  mqttServerAddress = config.mqttServer;
-  mqttUsername = config.mqttUsername;
-  mqttPass = config.mqttPassword;
-  mqttClientId = config.mqttClientId;
-  mqttServerPort = config.mqttServerPort;
-  mqttTopic = config.mqttTopic;
-  visualNotifications = config.rgb ? true : false;
-  audioNotifications = config.buzzer ? true : false;
+  preferencesData.networkName = config.ssidName;
+  preferencesData.networkPassword = config.ssidPassword;
+  preferencesData.mqttServerAddress = config.mqttServer;
+  preferencesData.mqttUsername = config.mqttUsername;
+  preferencesData.mqttPassword = config.mqttPassword;
+  preferencesData.mqttClientId = config.mqttClientId;
+  preferencesData.mqttServerPort = config.mqttServerPort;
+  preferencesData.mqttTopic = config.mqttTopic;
+  preferencesData.visualNotifications = config.rgb ? true : false;
+  preferencesData.audioNotifications = config.buzzer ? true : false;
 
   // Check and store flag if configuration is valid.
-  static bool isConfigurationValid = config.ssidName.length() > 0 && config.mqttServer.length() > 0 && config.mqttClientId.length() > 0 && config.mqttTopic.length() > 0 && config.mqttServerPort > 0;
+  static bool isConfigurationValid = preferencesData.networkName.length() > 0 && preferencesData.mqttServerAddress.length() > 0 && preferencesData.mqttClientId.length() > 0 && preferencesData.mqttTopic.length() > 0 && preferencesData.mqttServerPort > 0;
 
   // Initialize visualization library neo pixels.
   // This does not light up neo pixels.
   notifications.visual.initializePixels();
 
   // Play intro melody on speaker if enabled in preferences.
-  if (audioNotifications) {
+  if (preferencesData.audioNotifications) {
     notifications.audio.introMelody();
   }
 
@@ -176,27 +163,27 @@ void setup() {
   delay(1600);
 
   // Print a formatted welcome message with build information.
-  String buildVersion = "v0.001";
-  String buildDate = "Q2, 2025.";
+  String buildVersion = "v0.004";
+  String buildDate = "Q3, 2025.";
   Serial.printf("\n\rSMAF-DK-Tracker, Crafted with love in Europe.\n\rBuild version: %s\n\rBuild date: %s\n\r\n\r", buildVersion, buildDate);
 
   // Print loaded configuration data.
   debug(CMD, "Loading WiFi/MQTT Configuration");
   debug(SCS, "Loaded WiFi/MQTT Configuration");
-  debug(LOG, "SSID Name: %s", config.ssidName.c_str());
-  debug(LOG, "SSID Password: %s", config.ssidPassword.c_str());
-  debug(LOG, "MQTT Server: %s", config.mqttServer.c_str());
-  debug(LOG, "MQTT Port: %s", String(config.mqttServerPort));
-  debug(LOG, "MQTT Username: %s", config.mqttUsername.c_str());
-  debug(LOG, "MQTT Password: %s", config.mqttPassword.c_str());
-  debug(LOG, "MQTT Client ID: %s", config.mqttClientId.c_str());
-  debug(LOG, "MQTT Topic: %s", config.mqttTopic.c_str());
-  debug(LOG, "Visual Notifications: %s", String(config.rgb ? "true" : "false"));
-  debug(LOG, "Audio Notifications: %s", String(config.buzzer ? "true" : "false"));
+  debug(LOG, "SSID Name: %s", preferencesData.networkName.c_str());
+  debug(LOG, "SSID Password: %s", preferencesData.networkPassword.c_str());
+  debug(LOG, "MQTT Server: %s", preferencesData.mqttServerAddress.c_str());
+  debug(LOG, "MQTT Port: %s", String(preferencesData.mqttServerPort));
+  debug(LOG, "MQTT Username: %s", preferencesData.mqttUsername.c_str());
+  debug(LOG, "MQTT Password: %s", preferencesData.mqttPassword.c_str());
+  debug(LOG, "MQTT Client ID: %s", preferencesData.mqttClientId.c_str());
+  debug(LOG, "MQTT Topic: %s", preferencesData.mqttTopic.c_str());
+  debug(LOG, "Visual Notifications: %s", String(preferencesData.visualNotifications ? "true" : "false"));
+  debug(LOG, "Audio Notifications: %s", String(preferencesData.audioNotifications ? "true" : "false"));
 
   // Print status of configuration data.
   if (isConfigurationValid) {
-    debug(SCS, "Configuration is valid. All required configuration data is present.");
+    debug(SCS, "Configuration is valid. All required configuration data is populated.");
   } else {
     debug(ERR, "Configuration is incomplete. Some required fields are missing.");
   }
@@ -244,10 +231,6 @@ void setup() {
   // Set the I2C port to output UBX only for GNSS/GPS (turn off NMEA noise).
   gnss.setI2COutput(COM_TYPE_UBX);
 
-  // MQTT Client message buffer size.
-  // Default is set to 256.
-  mqtt.setBufferSize(1024);
-
   // Setup hardware Watchdog timer. Bark Bark.
   initWatchdog(30, true);
 }
@@ -271,75 +254,103 @@ void loop() {
   imu.getSensorData();
 
   // Accelerometer data.
-  accelerometerX = imu.data.accelX;
-  accelerometerY = imu.data.accelY;
-  accelerometerZ = imu.data.accelZ;
-  accelerometerMagnitude = sqrt(accelerometerX * accelerometerX + accelerometerY * accelerometerY + accelerometerZ * accelerometerZ);
+  accelerometerData.x = imu.data.accelX;
+  accelerometerData.y = imu.data.accelY;
+  accelerometerData.z = imu.data.accelZ;
+  accelerometerData.magnitude = sqrt(accelerometerData.x * accelerometerData.x + accelerometerData.y * accelerometerData.y + accelerometerData.z * accelerometerData.z);
 
   // Gyroscope data.
-  gyroscopeX = imu.data.gyroX;
-  gyroscopeY = imu.data.gyroY;
-  gyroscopeZ = imu.data.gyroZ;
-
-  // Log IMU data.
-  debug(LOG, "IMU acceleorometer: X %sm/s^2, Y %sm/s^2, Z %sm/s^2, Magnitude %sm/s^2.", String(accelerometerX).c_str(), String(accelerometerY).c_str(), String(accelerometerZ).c_str(), String(accelerometerMagnitude).c_str());
-  debug(LOG, "IMU gyroscope: X %sdeg/s, Y %sdeg/s, Z %sdeg/s", String(gyroscopeX).c_str(), String(gyroscopeY).c_str(), String(gyroscopeZ).c_str());
+  gyroscopeData.x = imu.data.gyroX;
+  gyroscopeData.y = imu.data.gyroY;
+  gyroscopeData.z = imu.data.gyroZ;
 
   // Request (poll) the position, velocity and time (PVT) information.
   // The module only responds when a new position is available. Default is once per second.
   // getPVT() returns true when new data is received.
   if (gnss.getPVT() == true) {
-    bool gnssFixOk = gnss.getGnssFixOk();
-    uint8_t satellitesInRange = gnss.getSIV();
-    int32_t latitude = gnss.getLatitude();
-    int32_t longitude = gnss.getLongitude();
-    int32_t speed = gnss.getGroundSpeed();
-    int32_t heading = gnss.getHeading();
-    int32_t altitude = gnss.getAltitudeMSL();
-    String timestamp = getUtcTimeString();
+    actualPositioningData.gnssFixOk = gnss.getGnssFixOk();
+    actualPositioningData.satellitesInRange = gnss.getSIV();
+    actualPositioningData.latitude = gnss.getLatitude();
+    actualPositioningData.longitude = gnss.getLongitude();
+    actualPositioningData.speed = gnss.getGroundSpeed();
+    actualPositioningData.heading = gnss.getHeading();
+    actualPositioningData.altitude = gnss.getAltitudeMSL();
+    actualPositioningData.timestamp = getUtcTimeString();
 
     // If the device is ready to send, publish a message to the MQTT broker.
-    if (gnssFixOk && latitude != 0 && longitude != 0) {
+    if (actualPositioningData.gnssFixOk && actualPositioningData.latitude != 0 && actualPositioningData.longitude != 0) {
       deviceStatus = READY_TO_SEND;
-      debug(SCS, "Device is ready to post data, %d satellites locked.", satellitesInRange);
-      debug(CMD, "Posting data package to MQTT broker '%s' on topic '%s'.", mqttServerAddress.c_str(), mqttTopic.c_str());
+      debug(LOG, "Device is ready to post messages, %d satellites locked.", actualPositioningData.satellitesInRange);
+      debug(CMD, "Posting new message to MQTT broker '%s' on topic '%s'.", preferencesData.mqttServerAddress.c_str(), preferencesData.mqttTopic.c_str());
 
-      // Store MQTT data here.
-      String mqttData = constructMqttMessage(satellitesInRange, longitude, latitude, altitude, speed, heading, timestamp, accelerometerX, accelerometerY, accelerometerY, accelerometerMagnitude, gyroscopeX, gyroscopeY, gyroscopeZ, false);
-      mqtt.publish(mqttTopic.c_str(), mqttData.c_str(), true);
-    } 
-    /*
-    else if (fallbackDataLoaded && !gnssFixOk) {
-      // deviceStatus = WAITING_GNSS;
-      // debug(LOG, "No GNSS fix. Posting retained data instead.");
-      // mqtt.publish(mqttTopic.c_str(), lastValidJson.c_str(), true);
+      // Construct MQTT message ready for publishing.
+      String mqttData = constructMqttMessage(actualPositioningData, accelerometerData, gyroscopeData);
+      debug(LOG, "Message: %s", mqttData.c_str());
 
+      mqttClient.beginMessage(preferencesData.mqttTopic.c_str(), true);  // true = retain flag.
+      mqttClient.print(mqttData);                                        // Send as string.
+      mqttClient.endMessage();                                           // End message.
+    } else {
       deviceStatus = WAITING_GNSS;
-      debug(LOG, "No GNSS fix. Posting retained data instead.");
-
-      JsonDocument doc;
-      DeserializationError error = deserializeJson(doc, lastValidJson);
-
-      if (!error) {
-        doc["isStale"] = true;  // Inject flag here only
-        String stalePayload;
-        serializeJson(doc, stalePayload);
-        mqtt.publish(mqttTopic.c_str(), stalePayload.c_str(), true);
-      } else {
-        debug(ERR, "Failed to re-parse fallback data.");
-      }
-    } 
-    */
-    else {
-      deviceStatus = WAITING_GNSS;
-      debug(ERR, "Device is not ready to post data. Searching for satellites, %d locked.", satellitesInRange);
+      debug(LOG, "Device is not ready to post messages. Searching for satellites, %d locked.", actualPositioningData.satellitesInRange);
     }
   }
 
   // Check for incoming data on defined MQTT topic.
   // This is hard core connection check.
   // If no data on topic is received, we are not connected to internet or server and watchdog will reset the device.
-  mqtt.loop();
+  mqttClient.poll();
+}
+
+/**
+* @brief Handles the server response received on a specific MQTT topic.
+*
+* This function logs the server response using debug output. If the device status is not
+* in maintenance mode, it also resets the watchdog timer to prevent system reset.
+*
+* @param topic The MQTT topic on which the server response was received.
+* @param payload Pointer to the payload data received from the server.
+* @param length Length of the payload data.
+*/
+void onMqttMessage(int messageSize) {
+  debug(LOG, "Server '%s' responded with %s message on '%s' topic.", preferencesData.mqttServerAddress.c_str(), (mqttClient.messageRetain() ? "RETAINED" : "NEW"), mqttClient.messageTopic().c_str());
+
+  // Read the payload from the client
+  String payload;
+  while (mqttClient.available()) {
+    char c = (char)mqttClient.read();
+    payload += c;
+  }
+
+  debug(LOG, "Payload from server: %s", payload.c_str());
+
+  if (mqttClient.messageRetain()) {
+    /*
+    JsonDocument jsonDocument;
+    DeserializationError deserializationError = deserializeJson(jsonDocument, payload);
+
+    if (!deserializationError) {
+      debug(LOG, "Received MQTT message is valid JSON.");
+
+      // Modify a key.
+      // jsonDocument["isStale"] = true;
+
+      // Serialize back to string.
+      //  String modifiedJsonData = String();  // clear previous.
+      // serializeJson(jsonDocument, modifiedJsonData);
+
+      // Print modified result.
+      // debug(LOG, "Modified JSON: %s", modifiedJsonData.c_str());
+    } else {
+      debug(ERR, "Received MQTT message was not valid JSON.");
+    }
+    */
+  }
+
+  // Reset WDT.
+  if (deviceStatus != MAINTENANCE_MODE) {
+    resetWatchdog();
+  }
 }
 
 /**
@@ -361,19 +372,19 @@ void connectToNetwork() {
     WiFi.mode(WIFI_STA);
 
     // Log an error if not connected to the configurationured SSID.
-    debug(ERR, "Device not connected to '%s'.", networkName.c_str());
+    debug(ERR, "Device not connected to '%s'.", preferencesData.networkName.c_str());
 
     // Keep attempting to connect until successful.
     while (WiFi.status() != WL_CONNECTED) {
-      debug(CMD, "Connecting device to '%s'", networkName.c_str());
+      debug(CMD, "Connecting device to '%s'", preferencesData.networkName.c_str());
 
       // Attempt to connect to the Wi-Fi network using configurationured credentials.
-      WiFi.begin(networkName.c_str(), networkPass.c_str());
+      WiFi.begin(preferencesData.networkName.c_str(), preferencesData.networkPassword.c_str());
       delay(6400);
     }
 
     // Log successful connection and set device status.
-    debug(SCS, "Device connected to '%s'.", networkName.c_str());
+    debug(SCS, "Device connected to '%s'.", preferencesData.networkName.c_str());
   }
 }
 
@@ -390,32 +401,27 @@ void connectToNetwork() {
 * to the MQTT broker.
 */
 void connectToMqttBroker() {
-  if (!mqtt.connected()) {
-    // Set initial device status.
+  if (!mqttClient.connected()) {
     deviceStatus = NOT_READY;
 
-    // Set MQTT server and connection parameters.
-    mqtt.setServer(mqttServerAddress.c_str(), mqttServerPort);
-    mqtt.setCallback(serverResponse);
+    mqttClient.setUsernamePassword(preferencesData.mqttUsername.c_str(), preferencesData.mqttPassword.c_str());
+    mqttClient.setId(preferencesData.mqttClientId.c_str());
+    mqttClient.setTxPayloadSize(1024);  // Optional: increase if JSON is large.
 
-    // Log an error if not connected.
-    debug(ERR, "Device not connected to MQTT broker '%s'.", mqttServerAddress.c_str());
+    // Set the message receive callback.
+    mqttClient.onMessage(onMqttMessage);
 
-    // Keep attempting to connect until successful.
-    while (!mqtt.connected()) {
-      debug(CMD, "Connecting device to MQTT broker '%s'.", mqttServerAddress.c_str());
+    debug(ERR, "Device not connected to MQTT broker '%s'.", preferencesData.mqttServerAddress.c_str());
 
-      if (mqtt.connect(mqttClientId.c_str(), mqttUsername.c_str(), mqttPass.c_str())) {
-        // Log successful connection and set device status.
-        debug(SCS, "Device connected to MQTT broker '%s'.", mqttServerAddress.c_str());
+    while (!mqttClient.connected()) {
+      debug(CMD, "Connecting device to MQTT broker '%s'.", preferencesData.mqttServerAddress.c_str());
 
-        // Subscribe to MQTT topic.
-        mqtt.subscribe(mqttTopic.c_str());
-
+      if (mqttClient.connect(preferencesData.mqttServerAddress.c_str(), preferencesData.mqttServerPort)) {
+        debug(SCS, "Device connected to MQTT broker '%s'.", preferencesData.mqttServerAddress.c_str());
+        mqttClient.subscribe(preferencesData.mqttTopic.c_str());
         deviceStatus = WAITING_GNSS;
       } else {
-        // Retry after a delay if connection failed.
-        delay(4000);
+        delay(4000);  // Retry every 4s.
       }
     }
   }
@@ -448,98 +454,61 @@ String getUtcTimeString() {
 }
 
 /**
-* @brief Handles the server response received on a specific MQTT topic.
+* Constructs an MQTT message string containing GNSS, IMU, and timestamp data.
 *
-* This function logs the server response using debug output. If the device status is not
-* in maintenance mode, it also resets the watchdog timer to prevent system reset.
+* Constructs a JSON-formatted MQTT message string containing GNSS-related data
+* (satellites, longitude, latitude, altitude, speed, heading, timestamp),
+* accelerometer and gyroscope measurements.
 *
-* @param topic The MQTT topic on which the server response was received.
-* @param payload Pointer to the payload data received from the server.
-* @param length Length of the payload data.
-*/
-void serverResponse(char* topic, byte* payload, unsigned int length) {
-  debug(SCS, "Server '%s' responded.", mqttServerAddress.c_str());
-
-  // Reconstruct payload into a String.
-  // JsonDocument doc;
-  // DeserializationError error = deserializeJson(doc, payload);
-
-  // fallbackDataLoaded = !error;
-
-  // if (fallbackDataLoaded) {
-  //   lastValidJson = "";
-  //   serializeJson(doc, lastValidJson);
-  //   debug(SCS, "Retained message cached as fallback.");
-  // } else {
-  //   debug(ERR, "Received retained MQTT message was not valid JSON.");
-  // }
-
-  // Reset WDT.
-  if (deviceStatus != MAINTENANCE_MODE) {
-    resetWatchdog();
-  }
-}
-
-/**
-* @brief Constructs an MQTT message string containing GPS and time-related data.
-*
-* Constructs a JSON-formatted MQTT message string containing various GPS-related data
-* (satellites in range, longitude, latitude, speed, heading, altitude) and time-related
-* information (timestamp, GMT offset, DST offset).
-*
-* @param timestamp Human-readable timestamp in UTC format.
-* @param satellitesInRange Number of satellites currently in range.
-* @param longitude Longitude value in microdegrees (degrees * 1E-7).
-* @param latitude Latitude value in microdegrees (degrees * 1E-7).
-* @param altitude Altitude value in meters.
-* @param speed Speed value in meters per second.
-* @param heading Heading direction in microdegrees (degrees * 1E-5).
+* @param positioningData      Struct containing GNSS data and timestamp from 'Structs.h'.
+* @param accelerometerData    Struct containing accelerometer axis values and magnitude from 'Structs.h'.
+* @param gyroscopeData        Struct containing gyroscope axis values from 'Structs.h'.
 * @return A String containing the constructed MQTT message in JSON format.
 */
-String constructMqttMessage(uint8_t satellitesInRange, int32_t longitude, int32_t latitude, int32_t altitude, int32_t speed, int32_t heading, String timestamp, float accelerometerX, float accelerometerY, float accelerometerZ, float accelerometerMagnitude, float gyroscopeX, float gyroscopeY, float gyroscopeZ, bool isStale) {
+String constructMqttMessage(const PositioningData& positioningData, const AccelerometerData& accelerometerData, const GyroscopeData& gyroscopeData) {
   JsonDocument jsonDocument;
 
-  jsonDocument["isStale"] = isStale;
-  jsonDocument["timestamp"] = timestamp;
-  jsonDocument["satellites"] = satellitesInRange;
+  jsonDocument["timestamp"] = positioningData.timestamp;
+  jsonDocument["isStale"] = positioningData.gnssFixOk;
+  jsonDocument["satellites"] = positioningData.satellitesInRange;
 
   JsonObject lon = jsonDocument["longitude"].to<JsonObject>();
-  lon["value"] = longitude * 1e-7;
+  lon["value"] = positioningData.longitude * 1e-7;
   lon["unit"] = "deg";
 
   JsonObject lat = jsonDocument["latitude"].to<JsonObject>();
-  lat["value"] = latitude * 1e-7;
+  lat["value"] = positioningData.latitude * 1e-7;
   lat["unit"] = "deg";
 
   JsonObject alt = jsonDocument["altitude"].to<JsonObject>();
-  alt["value"] = round((altitude / 1000.0) * 100.0) / 100.0;
+  alt["value"] = round((positioningData.altitude / 1000.0) * 100.0) / 100.0;
   alt["unit"] = "m";
 
   JsonObject spd = jsonDocument["speed"].to<JsonObject>();
-  spd["value"] = round(((speed / 1000.0) * 3.6) * 100.0) / 100.0;
+  spd["value"] = round(((positioningData.speed / 1000.0) * 3.6) * 100.0) / 100.0;
   spd["unit"] = "km/h";
 
   JsonObject hdg = jsonDocument["heading"].to<JsonObject>();
-  hdg["value"] = round((heading * 1e-5) * 100.0) / 100.0;
+  hdg["value"] = round((positioningData.heading * 1e-5) * 100.0) / 100.0;
   hdg["unit"] = "deg";
 
   JsonObject imu = jsonDocument["imu"].to<JsonObject>();
   JsonObject acc = imu["accelerometer"].to<JsonObject>();
   JsonObject accVals = acc["values"].to<JsonObject>();
-  accVals["x"] = round(accelerometerX * 100.0) / 100.0;
-  accVals["y"] = round(accelerometerY * 100.0) / 100.0;
-  accVals["z"] = round(accelerometerZ * 100.0) / 100.0;
+  accVals["x"] = round(accelerometerData.x * 100.0) / 100.0;
+  accVals["y"] = round(accelerometerData.y * 100.0) / 100.0;
+  accVals["z"] = round(accelerometerData.z * 100.0) / 100.0;
   acc["unit"] = "m/s^2";
 
   JsonObject accel = imu["acceleration"].to<JsonObject>();
-  accel["value"] = round(accelerometerMagnitude * 100.0) / 100.0;
+  accel["value"] = round(accelerometerData.magnitude * 100.0) / 100.0;
   accel["unit"] = "G";
 
   JsonObject gyr = imu["gyroscope"].to<JsonObject>();
   JsonObject gyrVals = gyr["values"].to<JsonObject>();
-  gyrVals["x"] = round(gyroscopeX * 100.0) / 100.0;
-  gyrVals["y"] = round(gyroscopeY * 100.0) / 100.0;
-  gyrVals["z"] = round(gyroscopeZ * 100.0) / 100.0;
+  gyrVals["x"] = round(gyroscopeData.x * 100.0) / 100.0;
+  gyrVals["y"] = round(gyroscopeData.y * 100.0) / 100.0;
+  gyrVals["z"] = round(gyroscopeData.z * 100.0) / 100.0;
   gyr["unit"] = "deg/s";
 
   String output;
@@ -560,7 +529,7 @@ void DeviceStatusThread(void* pvParameters) {
     // Always show rainbow in MAINTENANCE_MODE.
     if (deviceStatus == MAINTENANCE_MODE) {
       notifications.visual.rainbowMode();
-    } else if (visualNotifications) {
+    } else if (preferencesData.visualNotifications) {
       // Clear the NeoPixel LED strip.
       notifications.visual.clearAllPixels();
 

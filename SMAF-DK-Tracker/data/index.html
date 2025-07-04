@@ -143,6 +143,19 @@
                 <input id="uploadConfig" type="submit" onclick="onSubmit()" value="Upload configuration">
             </div>
         </section>
+
+        <section style="margin-top: 2rem;">
+            <h4>Firmware<br>update</h4>
+            <p>Upload a new firmware file (.bin) to update your device. SPIFFS will not be touched.</p>
+
+            <div class="input-frame">
+                <label>Firmware file</label>
+                <div class="input-with-button">
+                    <input class="full-width" type="file" id="firmware" required>
+                    <button id="uploadFirmwareButton" onclick="onFirmwareUpdate()">Update firmware</button>
+                </div>
+            </div>
+        </section>
     </div>
 </body>
 
