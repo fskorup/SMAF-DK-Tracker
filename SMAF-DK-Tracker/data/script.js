@@ -98,9 +98,9 @@ function populateForm(data) {
     document.querySelector('input[name="rgb"]').checked = data.rgb || false;
     document.querySelector('input[name="buzzer"]').checked = data.buzzer || false;
 
-    document.getElementById("fwVersion").textContent     = data["fw-version"] || "Unknown";
-    document.getElementById("fwBuildDate").textContent   = data["fw-build-date"] || "Unknown";
-    document.getElementById("hwRevision").textContent    = data["hw-revision"]  || "Unknown";
+    document.getElementById("fwVersion").textContent = data["fw-version"] || "Unknown";
+    document.getElementById("fwBuildDate").textContent = data["fw-build-date"] || "Unknown";
+    document.getElementById("hwRevision").textContent = data["hw-revision"]  || "Unknown";
 
     // Now trigger scan (after dropdown has 1 saved entry)
     onRefreshWiFiNetworkList();
