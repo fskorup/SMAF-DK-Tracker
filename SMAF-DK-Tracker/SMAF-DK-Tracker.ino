@@ -163,9 +163,12 @@ void setup() {
   delay(1600);
 
   // Print a formatted welcome message with build information.
-  String buildVersion = "v0.004";
-  String buildDate = "Q3, 2025.";
-  Serial.printf("\n\rSMAF-DK-Tracker, Crafted with love in Europe.\n\rBuild version: %s\n\rBuild date: %s\n\r\n\r", buildVersion, buildDate);
+  String firmwareVersion = "v0.005";
+  String firmwareBuildDate = "Q3, 2025.";
+  String hardwareRevision = "R01";
+
+  setDeviceMetadata(firmwareVersion, firmwareBuildDate, hardwareRevision);
+  Serial.printf("\n\rSMAF-DK-Tracker, Crafted with love in Europe.\n\rFirmware version: %s\n\rFirmware build date: %s\n\rHardware revison: %s\n\r\n\r", firmwareVersion, firmwareBuildDate, hardwareRevision);
 
   // Print loaded configuration data.
   debug(CMD, "Loading WiFi/MQTT Configuration");

@@ -52,6 +52,20 @@ struct WiFiConfig {
   bool buzzer;
 };
 
+// Global metadata used on the configuration web page.
+extern String firmwareVersion;
+extern String firmwareBuildDate;
+extern String hardwareRevision;
+
+/**
+* Sets device metadata values shown on the configuration web interface.
+*
+* @param version Firmware version string.
+* @param buildDate Firmware build date string.
+* @param hwRev Hardware revision string.
+*/
+void setDeviceMetadata(const String& version, const String& buildDate, const String& hwRev);
+
 /**
 * Starts the Wi-Fi access point and serves the configuration web interface.
 * Mounts LittleFS, sets up WebSocket events, and serves HTML/CSS/JS files from storage.

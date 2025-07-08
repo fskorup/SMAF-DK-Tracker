@@ -41,6 +41,25 @@ AsyncWebServer server(80);  // HTTP server running on port 80.
 AsyncWebSocket ws("/ws");   // WebSocket endpoint at /ws.
 Preferences prefs;          // Preferences instance for reading/writing config.
 
+// Global metadata
+String deviceName = "";
+String firmwareVersion = "";
+String firmwareBuildDate = "";
+String hardwareRevision = "";
+
+/**
+* Sets device metadata values shown on the configuration web interface.
+*
+* @param version Firmware version string.
+* @param buildDate Firmware build date string.
+* @param hwRev Hardware revision string.
+*/
+void setDeviceMetadata(const String &version, const String &buildDate, const String &hwRev) {
+  firmwareVersion = version;
+  firmwareBuildDate = buildDate;
+  hardwareRevision = hwRev;
+}
+
 /**
 * Handles incoming WebSocket messages based on the provided action.
 * Supports configuration retrieval, saving new settings, and scanning for Wi-Fi networks.
@@ -71,6 +90,11 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, String data) {
     response["rgb"] = prefs.getBool("rgb", true);
     response["buzzer"] = prefs.getBool("buzzer", true);
     prefs.end();
+
+    // Include global metadata.
+    response["fw-version"] = firmwareVersion;
+    response["fw-build-date"] = firmwareBuildDate;
+    response["hw-revision"] = hardwareRevision;
 
     String json;
     serializeJson(response, json);
