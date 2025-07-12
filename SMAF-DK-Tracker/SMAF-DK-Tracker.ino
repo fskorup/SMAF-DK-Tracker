@@ -260,7 +260,8 @@ void loop() {
   accelerometerData.x = imu.data.accelX;
   accelerometerData.y = imu.data.accelY;
   accelerometerData.z = imu.data.accelZ;
-  accelerometerData.magnitude = sqrt(accelerometerData.x * accelerometerData.x + accelerometerData.y * accelerometerData.y + accelerometerData.z * accelerometerData.z);
+  // accelerometerData.magnitude = sqrt(accelerometerData.x * accelerometerData.x + accelerometerData.y * accelerometerData.y + accelerometerData.z * accelerometerData.z);
+  accelerometerData.magnitude = sqrt(accelerometerData.x * accelerometerData.x + accelerometerData.y * accelerometerData.y);
 
   // Gyroscope data.
   gyroscopeData.x = imu.data.gyroX;
